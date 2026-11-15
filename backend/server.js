@@ -10,14 +10,49 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const Admin = require('./models/Admin');
 
-function unwrapRouteModule(routeModule) {
-  return routeModule && typeof routeModule.default === 'function'
-    ? routeModule.default
-    : routeModule;
+function unwrapRouteModule(routeModule, routeName) {
+  let candidate = routeModule;
+  const visited = new Set();
+
+  for (let depth = 0; depth < 6; depth += 1) {
+    if (typeof candidate === 'function') {
+      return candidate;
+    }
+
+    if (
+      !candidate ||
+      typeof candidate !== 'object' ||
+      visited.has(candidate)
+    ) {
+      break;
+    }
+
+    visited.add(candidate);
+
+    if (typeof candidate.router === 'function') {
+      return candidate.router;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(candidate, 'default')) {
+      candidate = candidate.default;
+      continue;
+    }
+
+    break;
+  }
+
+  const keys =
+    routeModule && typeof routeModule === 'object'
+      ? Object.keys(routeModule).join(', ')
+      : 'none';
+
+  throw new TypeError(
+    `${routeName} must export an Express Router function. Export keys: ${keys}`
+  );
 }
 
-const authRoutes = unwrapRouteModule(require('./routes/auth'));
-const certRoutes = unwrapRouteModule(require('./routes/certificates'));
+const authRoutes = unwrapRouteModule(require('./routes/auth'), 'authRoutes');
+const certRoutes = unwrapRouteModule(require('./routes/certificates'), 'certRoutes');
 
 if (typeof authRoutes !== 'function') {
   throw new TypeError('authRoutes must export an Express Router function');

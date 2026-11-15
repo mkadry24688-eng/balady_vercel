@@ -454,3 +454,4 @@ router.post('/certificates-restore', authMiddleware, jsonUpload.single('file'), 
 
 
 module.exports = router;
+module.exports.router = router;
