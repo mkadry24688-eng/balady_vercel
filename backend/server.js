@@ -10,8 +10,22 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const Admin = require('./models/Admin');
 
-const authRoutes = require('./routes/auth');
-const certRoutes = require('./routes/certificates');
+function unwrapRouteModule(routeModule) {
+  return routeModule && typeof routeModule.default === 'function'
+    ? routeModule.default
+    : routeModule;
+}
+
+const authRoutes = unwrapRouteModule(require('./routes/auth'));
+const certRoutes = unwrapRouteModule(require('./routes/certificates'));
+
+if (typeof authRoutes !== 'function') {
+  throw new TypeError('authRoutes must export an Express Router function');
+}
+
+if (typeof certRoutes !== 'function') {
+  throw new TypeError('certRoutes must export an Express Router function');
+}
 
 
 const app = express();
